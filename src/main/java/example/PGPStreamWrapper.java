@@ -1,5 +1,6 @@
 package example;
 
+import com.google.common.io.Closeables;
 import lombok.AllArgsConstructor;
 import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -50,10 +51,18 @@ class PGPStreamWrapper {
 
         encryptedDataGenerator.addMethod(new JcePublicKeyKeyEncryptionMethodGenerator(publicKey.get(0)).setProvider(new BouncyCastleProvider()));
 
+        OutputStream edgStream = null;
         try {
-            PGPUtil.writeFileToLiteralData(encryptedDataGenerator.open(wrappee, buff), PGPLiteralData.BINARY, inputFile);
+            edgStream = encryptedDataGenerator.open(wrappee, buff);
+            PGPUtil.writeFileToLiteralData(edgStream, PGPLiteralData.BINARY, inputFile);
         } catch (PGPException | IOException e) {
             throw new PGPEncryptionException(e.getMessage(), e);
+        }finally{
+            try {
+                Closeables.close(edgStream, false);
+            } catch (IOException e) {
+                throw new PGPEncryptionException(e.getMessage(), e);
+            }
         }
     }
 
